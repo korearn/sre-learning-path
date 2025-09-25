@@ -1,0 +1,9 @@
+=== REPORTE DE ANÁLISIS DE LOGS ===
+Fecha de generación: 2024-01-16
+========================================
+ERROR: 4 ocurrencias
+INFO: 4 ocurrencias
+WARNING: 1 ocurrencias
+DEBUG: 0 ocurrencias
+
+TOTAL: 9 líneas procesadas
