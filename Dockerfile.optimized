@@ -1,0 +1,28 @@
+FROM python:3.9-alpine
+
+WORKDIR /app
+
+# AGREGAR g++ y todas las herramientas necesarias
+RUN apk add --no-cache --virtual .build-deps \
+    gcc \
+    g++ \
+    musl-dev \
+    linux-headers \
+    bash \
+    make \
+    libc-dev
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Limpiar herramientas de compilación
+RUN apk del .build-deps && \
+    rm -rf /tmp/* /var/tmp/*
+
+COPY src/ .
+
+RUN adduser -D myuser && chown -R myuser:myuser /app
+USER myuser
+
+CMD ["python", "./advanced_log_analyzer.py"]

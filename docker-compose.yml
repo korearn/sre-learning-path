@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  log-analyzer:
+    image: log-analyzer:v1  # Usamos la imagen que sabemos funciona
+    container_name: my-log-analyzer
+    volumes:
+      - ./src/app.log:/app/app.log:ro
+    restart: "no"
+    
+  # Servicio adicional: Generador de logs de ejemplo
+  log-generator:
+    image: alpine:latest
+    container_name: log-generator
+    command: |
+      sh -c "
+      echo '$(date) INFO - Service started' > /logs/sample.log
+      echo '$(date) ERROR - Test error message' >> /logs/sample.log
+      echo 'Logs generados exitosamente'
+      cat /logs/sample.log
+      "
+    volumes:
+      - ./logs:/logs

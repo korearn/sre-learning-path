@@ -1,0 +1,26 @@
+FROM python:3.9-alpine AS builder
+
+WORKDIR /app
+
+RUN apk add --no-cache \
+    gcc \
+    g++ \
+    musl-dev \
+    linux-headers
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+FROM python:3.9-alpine AS runtime
+
+WORKDIR /app
+
+COPY --from=builder /root/.local /root/.local
+COPY src/ .
+
+ENV PATH=/root/.local/bin:$PATH
+
+RUN adduser -D myuser && chown -R myuser:myuser /app
+USER myuser
+
+CMD ["python", "./advanced_log_analyzer.py"]

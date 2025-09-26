@@ -85,6 +85,17 @@ def main():
     """
     Función principal que orquesta el análisis
     """
+    import sys
+
+    # si no se proporciona argumento, usar app.log por defecto
+    if len(sys.argv) > 1:
+        ruta_log = sys.argv[1]
+    else:
+        ruta_log = "app.log" # valor por defecto
+
+    print("🔍 Iniciando análisis de logs...")
+    print(f"📁 Archivo de log: {ruta_log}")
+
     if len(sys.argv) < 2:
         print("Uso: python advanced_log_analyzer.py <archivo_log>")
         sys.exit(1)

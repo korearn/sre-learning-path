@@ -1,0 +1,2 @@
+$(date) INFO - Service started
+$(date) ERROR - Test error message
