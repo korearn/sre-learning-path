@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Advanced Log Analyzer - Día 2
-Analiza archivos de log reales y genera reportes
+Advanced Log Analyzer - Verión Web Service
 """
+from flask import Flask, jsonify
+import datetime
 
-import sys
-from collections import defaultdict
+app = Flask(__name__)
 
 def leer_archivo_log(ruta_archivo):
     """
@@ -16,7 +16,6 @@ def leer_archivo_log(ruta_archivo):
             lineas = archivo.readlines()
         return lineas
     except FileNotFoundError:
-        print(f"Error: No se encontró el archivo {ruta_archivo}")
         return []
 
 def analizar_niveles_log(lineas):
@@ -38,102 +37,35 @@ def analizar_niveles_log(lineas):
     
     return conteo
 
-def filtrar_errores_por_patron(lineas, patron):
-    """
-    Filtra líneas de ERROR que contengan un patrón específico
-    """
-    errores_filtrados = []
-    
-    for linea in lineas:
-        if 'ERROR' in linea and patron.lower() in linea.lower():
-            errores_filtrados.append(linea.strip())
-    
-    return errores_filtrados
+@app.route('/')
+def home():
+    return jsonify({
+        'service': 'Log Analyzer API',
+        'version': "1.0",
+        "timestamp": datetime.datetime.now().isoformat()
+    })
 
-def generar_reporte(conteo, archivo_salida="reporte_logs.txt"):
-    """
-    Genera un reporte en un archivo de texto
-    """
-    with open(archivo_salida, 'w') as reporte:
-        reporte.write("=== REPORTE DE ANÁLISIS DE LOGS ===\n")
-        reporte.write(f"Fecha de generación: 2024-01-16\n")
-        reporte.write("=" * 40 + "\n")
-        
-        for nivel, cantidad in conteo.items():
-            reporte.write(f"{nivel}: {cantidad} ocurrencias\n")
-        
-        total = sum(conteo.values())
-        reporte.write(f"\nTOTAL: {total} líneas procesadas\n")
-
-def estadisticas_errores_por_hora(lineas):
-    errores_por_hora = defaultdict(int)
-    for linea in lineas:
-        if 'ERROR' in linea:
-            # Suponiendo formato: "YYYY-MM-DD HH:MM:SS ERROR ..."
-            partes = linea.split()
-            if len(partes) > 1:
-                hora = partes[1][:2]  # Extrae la hora (HH)
-                errores_por_hora[hora] += 1
-    if errores_por_hora:
-        max_errores = max(errores_por_hora.values())
-        horas_max = [h for h, c in errores_por_hora.items() if c == max_errores]
-        print(f"Horas con más errores ({max_errores}): {', '.join(horas_max)}")
-    else:
-        print("No se encontraron errores para calcular estadísticas por hora.")
-
-def main():
-    """
-    Función principal que orquesta el análisis
-    """
-    import sys
-
-    # si no se proporciona argumento, usar app.log por defecto
-    if len(sys.argv) > 1:
-        ruta_log = sys.argv[1]
-    else:
-        ruta_log = "app.log" # valor por defecto
-
-    print("🔍 Iniciando análisis de logs...")
-    print(f"📁 Archivo de log: {ruta_log}")
-
-    if len(sys.argv) < 2:
-        print("Uso: python advanced_log_analyzer.py <archivo_log>")
-        sys.exit(1)
-    ruta_log = sys.argv[1]
-
-    print("🔍 Iniciando análisis de logs...")
-
-    # Leer archivo de log
+@app.route('/analyze')
+def analyze():
+    ruta_log = 'app.log'
     lineas = leer_archivo_log(ruta_log)
 
     if not lineas:
-        print("No se pudieron leer los logs. Saliendo.")
-        return
+        return jsonify({'error': "No se pudo leer el archivo de log"}), 500
 
-    print(f"📖 Se leyeron {len(lineas)} líneas del archivo {ruta_log}")
-
-    # Analizar niveles de log
     conteo = analizar_niveles_log(lineas)
+    total = sum(conteo.values())
 
-    # Mostrar resultados en consola
-    print("\n📊 RESUMEN DE NIVELES DE LOG:")
-    print("-" * 30)
-    for nivel, cantidad in conteo.items():
-        print(f"{nivel}: {cantidad}")
+    return jsonify({
+        "files": ruta_log,
+        "total_lines": total,
+        "analysis": conteo,
+        "timestamp": datetime.datetime.now().isoformat()
+    })
 
-    # Filtrar errores específicos
-    errores_db = filtrar_errores_por_patron(lineas, "database")
-    print(f"\n🔴 Errores de base de datos: {len(errores_db)}")
-    for error in errores_db:
-        print(f"   - {error}")
+@app.route('/health')
+def health():
+    return jsonify({'status': 'healthy'}), 200
 
-    # Estadísticas de errores por hora
-    estadisticas_errores_por_hora(lineas)
-
-    # Generar reporte
-    generar_reporte(conteo)
-    print(f"\n📄 Reporte generado: reporte_logs.txt")
-
-# Punto de entrada del script
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)

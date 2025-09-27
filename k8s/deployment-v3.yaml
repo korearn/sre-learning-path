@@ -1,0 +1,43 @@
+# k8s/deployment-v3.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-analyzer
+  namespace: log-analyzer
+spec:
+  replicas: 2  # ¡Ahora 2 réplicas!
+  selector:
+    matchLabels:
+      app: log-analyzer
+  template:
+    metadata:
+      labels:
+        app: log-analyzer
+    spec:
+      containers:
+      - name: log-analyzer
+        image: log-analyzer:v2  # Nueva versión
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5000
+        # Health Checks
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        command: ["python", "./advanced_log_analyzer.py"]
+        volumeMounts:
+        - name: log-volume
+          mountPath: /app-logs
+      volumes:
+      - name: log-volume
+        configMap:
+          name: log-file

@@ -1,4 +1,2 @@
-# Análisis de datos (para extensiones futuras)
-pandas==2.0.3
-# Requests para APIs (ejercicios avanzados)
 requests==2.31.0
+flask==2.3.3

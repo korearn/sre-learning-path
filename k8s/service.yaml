@@ -1,0 +1,13 @@
+# k8s/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: log-analyzer-service
+  namespace: log-analyzer
+spec:
+  selector:
+    app: log-analyzer
+  ports:
+  - port: 80
+    targetPort: 5000
+  type: ClusterIP
