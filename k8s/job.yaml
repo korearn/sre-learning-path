@@ -1,0 +1,23 @@
+# job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: log-analyzer-job
+  namespace: log-analyzer
+spec:
+  template:
+    spec:
+      containers:
+      - name: log-analyzer
+        image: log-analyzer:v1
+        imagePullPolicy: Never
+        command: ["python", "./advanced_log_analyzer.py", "/app-logs/app.log"]
+        volumeMounts:
+        - name: log-volume
+          mountPath: /app-logs
+      volumes:
+      - name: log-volume
+        configMap:
+          name: log-file
+      restartPolicy: Never
+  backoffLimit: 1

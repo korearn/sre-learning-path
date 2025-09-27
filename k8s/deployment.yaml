@@ -1,0 +1,21 @@
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-analyzer
+  namespace: log-analyzer
+spec:
+  replicas: 1  # Número de instancias
+  selector:
+    matchLabels:
+      app: log-analyzer
+  template:
+    metadata:
+      labels:
+        app: log-analyzer
+    spec:
+      containers:
+      - name: log-analyzer
+        image: log-analyzer:v1  # Tu imagen local
+        imagePullPolicy: Never  # Usar imagen local, no descargar
+        command: ["python", "./advanced_log_analyzer.py"]

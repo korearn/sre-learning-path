@@ -1,0 +1,28 @@
+# deployment-v2.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-analyzer
+  namespace: log-analyzer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-analyzer
+  template:
+    metadata:
+      labels:
+        app: log-analyzer
+    spec:
+      containers:
+      - name: log-analyzer
+        image: log-analyzer:v1
+        imagePullPolicy: Never
+        command: ["python", "./advanced_log_analyzer.py", "/app-logs/app.log"]
+        volumeMounts:
+        - name: log-volume
+          mountPath: /app-logs
+      volumes:
+      - name: log-volume
+        configMap:
+          name: log-file
