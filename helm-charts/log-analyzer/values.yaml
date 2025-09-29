@@ -1,0 +1,32 @@
+# Crear un values.yaml completo y limpio
+replicaCount: 2
+
+image:
+  repository: log-analyzer
+  tag: "v2"
+  pullPolicy: Never
+
+service:
+  type: ClusterIP
+  port: 80
+
+app:
+  port: 5000
+
+serviceAccount:
+  create: false
+
+autoscaling:
+  enabled: false
+
+ingress:
+  enabled: false
+
+configMap:
+  enabled: true
+  logData: |
+    2024-01-18 08:00:00 INFO - Application started
+    2024-01-18 08:00:05 ERROR - Database connection timeout
+    2024-01-18 08:00:10 INFO - Service healthy
+    2024-01-18 08:00:15 WARNING - High memory usage
+    2024-01-18 08:00:20 INFO - Backup completed
