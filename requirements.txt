@@ -1,3 +1,4 @@
+# requirements.txt
 pytest
 pytest-cov
 requests==2.31.0
@@ -6,3 +7,7 @@ black
 flake8
 coverage
 coverage-badge
+# Security tools (SOLO Python)
+safety
+bandit
+semgrep

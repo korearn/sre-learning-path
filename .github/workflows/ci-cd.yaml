@@ -1,4 +1,4 @@
-# .github/workflows/ci-cd.yaml - VERSIÓN MEJORADA
+# .github/workflows/ci-cd.yaml - CON SEGURIDAD
 name: CI/CD Pipeline
 
 on:
@@ -8,9 +8,54 @@ on:
     branches: [ main ]
 
 jobs:
+  security:
+  name: Security Scans
+  runs-on: ubuntu-latest
+  
+  steps:
+  - name: Checkout code
+    uses: actions/checkout@v4
+    
+  - name: Set up Python
+    uses: actions/setup-python@v4
+    with:
+      python-version: '3.9'
+      
+  - name: Install Python security tools
+    run: |
+      python -m pip install --upgrade pip
+      pip install safety bandit semgrep
+      
+  - name: Scan dependencies for vulnerabilities
+    run: |
+      safety check --json --output safety-report.json || true
+      echo "=== DEPENDENCY VULNERABILITIES ==="
+      safety check --short-report
+      
+  - name: Scan code for security issues
+    run: |
+      echo "=== CODE SECURITY SCAN ==="
+      bandit -r ./src -f json -o bandit-report.json || true
+      bandit -r ./src -f screen
+      
+  - name: Run SAST with Semgrep
+    run: |
+      echo "=== SEMGREP SAST SCAN ==="
+      semgrep scan --config=auto --json --output semgrep-report.json || true
+      semgrep scan --config=auto --quiet
+      
+  - name: Upload security reports
+    uses: actions/upload-artifact@v4
+    with:
+      name: security-reports
+      path: |
+        *-report.json
+      retention-days: 7
+
   test:
     name: Run Tests and Quality Checks
     runs-on: ubuntu-latest
+    needs: security
     
     steps:
     - name: Checkout code
@@ -59,21 +104,36 @@ jobs:
           .coverage
 
   build:
-    name: Build Docker Image
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+  name: Build and Scan Docker Image
+  runs-on: ubuntu-latest
+  needs: test
+  if: github.ref == 'refs/heads/main'
+  
+  steps:
+  - name: Checkout code
+    uses: actions/checkout@v4
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+  - name: Set up Docker Buildx
+    uses: docker/setup-buildx-action@v3
+    
+  - name: Build Docker image
+    run: |
+      docker build -t log-analyzer:ci-cd .
       
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+  - name: Install Trivy
+    run: |
+      curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
       
-    - name: Build Docker image
-      run: |
-        docker build -t log-analyzer:ci-cd .
+  - name: Scan Docker image for vulnerabilities
+    run: |
+      trivy image --format table --exit-code 0 log-analyzer:ci-cd
+      trivy image --format json --output trivy-report.json log-analyzer:ci-cd || true
+      
+  - name: Upload Docker scan reports
+    uses: actions/upload-artifact@v4
+    with:
+      name: docker-security-reports
+      path: trivy-report.json
 
   # ... (el resto de tus jobs permanecen igual)
   deploy-demo:
@@ -110,11 +170,11 @@ jobs:
   success:
     name: Pipeline Success
     runs-on: ubuntu-latest
-    needs: [test, build, deploy-demo]
+    needs: [security, test, build, deploy-demo]
     if: always()
     
     steps:
     - name: Pipeline completed
       run: |
-        echo "✅ CI/CD Pipeline execution completed"
-        echo "Tests, build, and deployment verification finished"
+        echo "✅ CI/CD Pipeline with Security Scans completed"
+        echo "Security, tests, build, and deployment verification finished"
