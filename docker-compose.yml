@@ -21,3 +21,10 @@ services:
       "
     volumes:
       - ./logs:/logs
+
+# Agregar en docker-compose.yml:
+  services:
+  your-service:
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
