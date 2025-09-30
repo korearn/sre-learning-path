@@ -181,3 +181,50 @@ jobs:
         run: |
           echo "✅ CI/CD Pipeline with Security Scans completed"
           echo "Security, tests, build, and deployment verification finished"
+
+      - name: Download coverage badge
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-reports
+          path: ./downloaded-reports
+
+      - name: Create summary report
+        if: always()
+        run: |
+          echo "## 🚀 CI/CD Pipeline Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Quality & Security Gates" >> $GITHUB_STEP_SUMMARY
+          echo "- **Security Scanning**: Safety, Bandit, Semgrep, Trivy" >> $GITHUB_STEP_SUMMARY
+          echo "- **Code Quality**: Black formatting, Flake8 linting" >> $GITHUB_STEP_SUMMARY
+          echo "- **Testing**: pytest with coverage reporting" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build**: Docker image built and scanned" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment**: Kubernetes cluster validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Artifacts Generated" >> $GITHUB_STEP_SUMMARY
+          echo "- Security reports (Safety, Bandit, Semgrep, Trivy)" >> $GITHUB_STEP_SUMMARY
+          echo "- Coverage reports (HTML + SVG badge)" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker scan results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔍 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Download artifacts for detailed reports" >> $GITHUB_STEP_SUMMARY
+          echo "2. Review security findings if any" >> $GITHUB_STEP_SUMMARY
+          echo "3. Check coverage badge for README" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Mostrar estado final
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "**🎉 ALL CHECKS PASSED - PIPELINE SUCCESSFUL**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**⚠️ SOME CHECKS FAILED - REVIEW LOGS**" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Notify completion status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ Pipeline completed successfully!"
+            echo "All quality and security gates passed"
+          else
+            echo "❌ Pipeline completed with failures"
+            echo "Check workflow logs for details"
+          fi
