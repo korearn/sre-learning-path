@@ -1,18 +1,21 @@
-# Dockerfile
-# Usa una imagen oficial de Python
+# Dockerfile optimizado para CI/CD
 FROM python:3.9-slim
 
-# Establece el directorio de trabajo en el contenedor
 WORKDIR /app
 
-# Copia los archivos de requisitos primero (para cache de Docker)
+# Copiar requirements primero (para cache de Docker)
 COPY requirements.txt .
-
-# Instala las dependencias de Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia el código de la aplicación
+# Copiar el código
 COPY src/ .
 
-# Comando por defecto cuando se ejecute el contenedor
-CMD ["python", "./advanced_log_analyzer.py", "app.log"]
+# Puerto para la aplicación
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:5000/health || exit 1
+
+# Comando para ejecutar la aplicación
+CMD ["python", "./advanced_log_analyzer.py"]

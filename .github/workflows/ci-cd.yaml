@@ -1,0 +1,139 @@
+# .github/workflows/ci-cd.yaml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-dev.txt
+        
+    - name: Run tests with pytest
+      run: |
+        python -m pytest tests/ -v
+        
+    - name: Test coverage
+      run: |
+        python -m pytest tests/ --cov=src --cov-report=term-missing
+
+  build-and-push:
+    name: Build and Push Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository }}:latest
+          ghcr.io/${{ github.repository }}:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy-to-k8s:
+    name: Deploy to Kubernetes
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Kubernetes tools
+      uses: engineerd/setup-kind@v0.6.0
+      with:
+        version: "v0.20.0"
+        
+    - name: Create kind cluster
+      run: |
+        cat > kind-config.yaml << EOF
+        kind: Cluster
+        apiVersion: kind.x-k8s.io/v1alpha4
+        nodes:
+        - role: control-plane
+          extraPortMappings:
+          - containerPort: 30000
+            hostPort: 8080
+        EOF
+        kind create cluster --config kind-config.yaml
+        
+    - name: Deploy with Helm
+      run: |
+        # Instalar Helm
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        
+        # Crear namespace
+        kubectl create namespace ci-cd-demo --dry-run=client -o yaml | kubectl apply -f -
+        
+        # Instalar la aplicación
+        helm upgrade --install log-analyzer \
+          ./helm-charts/log-analyzer \
+          -n ci-cd-demo \
+          --set image.repository=ghcr.io/${{ github.repository }} \
+          --set image.tag=latest \
+          --set image.pullPolicy=Always
+        
+    - name: Verify deployment
+      run: |
+        kubectl rollout status deployment/log-analyzer -n ci-cd-demo --timeout=180s
+        kubectl get pods -n ci-cd-demo
+
+  integration-test:
+    name: Integration Test
+    needs: deploy-to-k8s
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Test deployed application
+      run: |
+        # Esperar a que el pod esté listo
+        sleep 30
+        
+        # Forward port y test
+        kubectl port-forward -n ci-cd-demo service/log-analyzer-service 8080:80 &
+        sleep 10
+        
+        # Test de health check
+        curl -f http://localhost:8080/health || exit 1
+        echo "✅ Health check passed"
+        
+        # Test de endpoint principal
+        curl -f http://localhost:8080/analyze || exit 1
+        echo "✅ Analysis endpoint working"
