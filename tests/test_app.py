@@ -1,10 +1,17 @@
+# tests/test_app.py - VERSIÓN PARA GITHUB ACTIONS
 import sys
 import os
 
-# Agregar el directorio src al path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+# Agregar el directorio correcto al path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from src.advanced_log_analyzer import leer_archivo_log, analizar_niveles_log
+try:
+    from advanced_log_analyzer import leer_archivo_log, analizar_niveles_log
+except ImportError:
+    # Fallback para estructura diferente
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+    from src.advanced_log_analyzer import leer_archivo_log, analizar_niveles_log
 
 def test_leer_archivo_log():
     """Test que verifica la lectura de archivos de log"""
