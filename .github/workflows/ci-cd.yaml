@@ -145,30 +145,30 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main'
   
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       
-    - name: Set up Kind cluster
-      run: |
-        curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.20.0/kind-linux-amd64
-        chmod +x ./kind
-        sudo mv ./kind /usr/local/bin/
+      - name: Set up Kind cluster
+        run: |
+          curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.20.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/
         
-    - name: Create cluster
-      run: |
-        cat > kind-config.yaml << 'EOF'
-        kind: Cluster
-        apiVersion: kind.x-k8s.io/v1alpha4
-        nodes:
-        - role: control-plane
-        EOF
-        kind create cluster --config kind-config.yaml
+      - name: Create cluster
+        run: |
+          cat > kind-config.yaml << 'EOF'
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+          - role: control-plane
+          EOF
+          kind create cluster --config kind-config.yaml
         
-    - name: Verify cluster
-      run: |
-        kubectl cluster-info
-        kubectl get nodes
+      - name: Verify cluster
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
 
   success:
     name: Pipeline Success
