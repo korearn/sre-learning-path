@@ -1,6 +1,8 @@
-# requirements.txt
 pytest
 pytest-cov
-# otras dependencias de tu proyecto
 requests==2.31.0
 flask==2.3.3
+black
+flake8
+coverage
+coverage-badge

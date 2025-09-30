@@ -1,4 +1,4 @@
-# .github/workflows/ci-cd.yaml - VERSIÓN CORREGIDA
+# .github/workflows/ci-cd.yaml - VERSIÓN MEJORADA
 name: CI/CD Pipeline
 
 on:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   test:
-    name: Run Tests
+    name: Run Tests and Quality Checks
     runs-on: ubuntu-latest
     
     steps:
@@ -24,16 +24,39 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        # Instalar desde requirements.txt si existe, o instalar paquetes específicos
-        if [ -f "requirements.txt" ]; then
-          pip install -r requirements.txt
-        fi
-        # Instalar dependencias de testing
-        pip install pytest pytest-cov
+        pip install -r requirements.txt
         
-    - name: Run basic tests
+    - name: Install quality tools
       run: |
-        python -m pytest tests/ -v
+        pip install black flake8 coverage
+        
+    - name: Check code formatting with Black
+      run: |
+        black --check ./src ./tests
+        
+    - name: Run linting with Flake8
+      run: |
+        flake8 ./src ./tests --count --max-complexity=10 --max-line-length=88 --statistics --show-source
+        
+    - name: Run tests with coverage
+      run: |
+        coverage run --source=src -m pytest tests/ -v
+        coverage report
+        coverage html
+        
+    - name: Generate coverage badge
+      run: |
+        pip install coverage-badge
+        coverage-badge -o coverage.svg
+        
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports
+        path: |
+          htmlcov/
+          coverage.svg
+          .coverage
 
   build:
     name: Build Docker Image
@@ -52,6 +75,7 @@ jobs:
       run: |
         docker build -t log-analyzer:ci-cd .
 
+  # ... (el resto de tus jobs permanecen igual)
   deploy-demo:
     name: Deploy to Kind Cluster
     needs: build
