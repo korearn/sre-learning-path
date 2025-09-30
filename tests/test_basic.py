@@ -1,7 +1,4 @@
 # tests/test_basic.py - TEST MÍNIMO FUNCIONAL
-import sys
-import os
-
 
 def test_basic():
     """Test básico que siempre pasa"""
